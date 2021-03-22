@@ -76,51 +76,15 @@ else
 end
 
 %% Plasma requirements
-p = 7e5;
-n = 1.4e20;
-beta = 0.08;
-tau_e = 1.2;
+res.p = 7e5;
+res.n = 1.4e20;
+res.beta = 0.08;
+res.tau_e = 1.2;
 
-%% Confinement
-
-if ~settings.constraint_plot
-    res.I_p = CalculateCurrent(fixed, res); % MA
-else
-    I_p = CalculateCurrent(fixed, res); % MA
-end
+%% Current
+res.I_p = CalculateCurrent(fixed, res); % MA
 
 %% Constraints
-q = (5 * a^2 * kappa * B_0) / (R_0 * I_p);
-f_b = 1.3 * kappa^(1/4) * beta * (5 * a^2 * kappa * B_0) / (R_0 * I_p) / epsilon^(1/2);
-
-limit.kappa = 2;
-limit.q = 2;
-limit.troyon = 0.028 * I_p / a / B_0;
-limit.greenwald = I_p / (pi * a^2);
-limit.bootstrap = 0.8;
-%% Plot constraints or calculate constraints
-if settings_constraint_plot
-    figure;
-    hold on
-    fplot(f_b / limit_bootstrap, settings_a_bounds);
-    fplot(n / limit_greenwald, settings_a_bounds);
-    fplot(beta / limit_troyon, settings_a_bounds);
-    fplot(q / limit_q, settings_a_bounds);
-    ylim([0, 2])
-else
-    LogicalStr = {'false', 'true'};
-    
-    constraint_kappa = kappa < limit_kappa;
-    constraint_safety = q > limit_q;
-    constraint_troyon = beta < limit_troyon;
-    constraint_greenwald = n < limit_greenwald;
-    constraint_bootstrap = f_b > limit_bootstrap;
-    
-    n_constraints_passed = constraint_kappa + constraint_safety + constraint_troyon + constraint_greenwald + constraint_bootstrap;
-    fprintf('Kappa constraint is fulfilled: %s\n', LogicalStr{constraint_kappa + 1})
-    fprintf('Safety factor constraint is fulfilled: %s\n', LogicalStr{constraint_safety + 1})
-    fprintf('Troyon limit constraint is fulfilled: %s\n', LogicalStr{constraint_troyon + 1})
-    fprintf('Greenwald limit constraint is fulfilled: %s\n', LogicalStr{constraint_greenwald + 1})
-    fprintf('Bootstrap current constraint is fulfilled: %s\n', LogicalStr{constraint_bootstrap + 1})
-    fprintf('Result: %u passed, %u failed\n', n_constraints_passed, 5 - n_constraints_passed)
-end
+ConstraintsCheck(res, settings)
+%% Print found parameters
+PrintResults(res)
