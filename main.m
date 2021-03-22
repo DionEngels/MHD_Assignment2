@@ -1,4 +1,4 @@
-close all
+close all; addpath('Functions');
 %% Settings
 settings.a_bounds = [0, 4];           % bounds for minor radius in plots
 settings.constraint_plot = 1;         % 1 for show plots, 0 for calculate check constraints
