@@ -49,8 +49,6 @@ res.P_fusion = fixed.P_e / fixed.eta_e; % Fusion power
 %% Desired parameter
 syms a;                               % m
 res.R_0 = a / res.epsilon;            % m
-%% Required parameter
-syms a;                 % m
 
 %% Unknowns
 R_0 = 10 / a;           % m
