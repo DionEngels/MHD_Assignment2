@@ -1,22 +1,19 @@
 function [sym, res] = CalculateDimensions(sym, res, fixed, phys, coil, settings)
 % CalculateDimensions Calculates the mayor radius, plasma volume, total cost, the total magnet thickness and the normal
 % stress to which the structural material in the TF field coils is subjected
-syms a c
+syms a
 
 if settings.roger
-%     res.epsilon = 0.4;
-%     res.R_0 = res.a / res.epsilon;
-%     F_m = 2 * pi * res.R_0 * coil.B_max^2 / phys.mu_0 * (2 * res.a + 2 * res.b + c) / 2;
-%     F_t = coil.sigma_max * 4 * pi * res.R_0 * c;
-%     res.c = solve(F_m == F_t, c);
-%     
-%     cost_function = 2 * pi^2 * res.R_0 * ((res.a + res.b + res.c)^2 - res.a^2) / (fixed.P_e/1e6);
-%     
-%     figure;
-%     fplot(cost_function, [1, 3], 'DisplayName', '13 T');
-%     ylim([0, 4]);
-%     
-%     res.aval = fminbnd(matlabFunction(cost_function), 1, 4);
+    syms c
+    res.epsilon = 0.4;
+    sym.R_0 = 10 / sym.a;
+    F_m = 2 * pi * sym.R_0 * coil.B_max^2 / phys.mu_0 * (2 * sym.a + 2 * res.b + c) / 2;
+    F_t = coil.sigma_max * 4 * pi * sym.R_0 * c;
+    sym.c = solve(F_m == F_t, c);
+    
+    cost_function = 2 * pi^2 * sym.R_0 * ((sym.a + res.b + sym.c)^2 - sym.a^2) / (fixed.P_e/1e6);
+        
+    res.a = fminbnd(matlabFunction(cost_function), 1, 4);
 else
     sym.R_0 = (4/5 * phys.E_f * fixed.P_e)/(4 * pi^2 * fixed.eta_e * (phys.E_f + phys.E_Li)*sqrt((1 + res.kappa^2) / 2) * fixed.P_w * sym.a);
 
@@ -42,4 +39,5 @@ sym.B_0 = coil.B_max * (sym.R_0 - res.a - res.b) / sym.R_0;
 res.c = double(subs(sym.c, a, res.a));
 res.R_0 = double(subs(sym.R_0, a, res.a));
 res.B_0 = double(subs(sym.B_0, a, res.a));
+res.epsilon = res.a / res.R_0;
 end
