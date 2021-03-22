@@ -1,13 +1,16 @@
-function [] = ConstraintsPlot(res, limits, q, f_b, settings)
+function [] = ConstraintsPlot(limit, settings)
 %CONSTRAINTSPLOT Plots the regime in which the constraints are valid
+
 figure;
 title("Constraints against minor radius")
 hold on
-fplot(f_b / limits.bootstrap, settings.a_bounds, 'DisplayName', 'f_{b} / f_{limit}');
-fplot(res.n / limits.greenwald, settings.a_bounds, 'DisplayName', 'n/n_G');
-fplot(res.beta / limits.troyon, settings.a_bounds, 'DisplayName', '{\beta}/{\beta_T}');
-fplot(q / limits.q, settings.a_bounds, 'DisplayName', 'q_{*} / q_{limit}');
+plot(settings.values,double(subs(limit.bootstrap,settings.var,settings.values)),'-r','DisplayName','0.75/f_b');
+plot(settings.values,subs(limit.greenwald,settings.var,settings.values),'--r','DisplayName','n/n_G');
+plot(settings.values,subs(limit.troyon,settings.var,settings.values),'-.r','DisplayName','{\beta}/{\beta_T}');
+plot(settings.values,subs(limit.q,settings.var,settings.values),':r','DisplayName','2/q_{*}');  
+
 ylim([0, 2])
 legend
+hold off
 end
 
