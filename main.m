@@ -1,115 +1,90 @@
 close all
 %% Settings
-settings_a_bounds = [0, 4];     % bounds for minor radius in plots
-settings_constraint_plot = 0;   % 1 for show plots, 0 for calculate check constraints
+settings.a_bounds = [0, 4];           % bounds for minor radius in plots
+settings.constraint_plot = 1;         % 1 for show plots, 0 for calculate check constraints
+settings.use_rebco = 0;               % Use REBCO magnets or not
 
-%% Given parameters
-P_e = 1000;             % MW
-P_w = 4;                % MW/m2
-syms B_max;             % T
-B_max_val = 13;         % T
-sigma_max = 300e6;      % Pa
-reactivity_dt = 3e-22;  % m3/s
-sigma_sd = 1e-28;       % m2
-sigma_br = 950e-28;     % m2
-eta_e = 0.4;            % -
-A = 1;                  % kg
-lambda_mfp = 0.02;       % m
+%% Physical Constants
+phys.mu_0 = 1.256e-6;                 % H/m
+phys.e = 1.60217649e-19;              % C
+phys.k = 1.3806504e-23;               % J*C/K
 
-%% Required parameters
+%% Fixed parameters
+fixed.P_e = 1000e6;                   % W power provided to the grid
+fixed.P_w = 4e6;                      % W/m2 max neutron wall loading
+fixed.sigma_max = 300e6;              % m3/s (at 15 keV)
+fixed.sigma_sd = 1e-28;               % m2 Slowdown crosssection
+fixed.sigma_br = 950e-28;             % m2 Breeding crosssection
+fixed.eta_e = 0.4;                    % - thermal conversion efficiency
+fixed.A = 2.5;                        % - average atomic mass for D-T
+fixed.H = 1;                          % - H mode enhancement factor (tau_E is multiplied with this factor)
+fixed.E_f = 17.6e6 * phys.e;            % J energy per fusion reaction
+fixed.E_Li = 4.8e6 * phys.e;            % J energy per neutron produced via Li-6 breeding in the blanket
+fixed.E_s = 210e9;                    % Pa Youngs modulus of the structural material (steel)
+fixed.lambda_mfp = 0.02;              % m mean free path
+
+%% Materials data from the superconducting magnets
+
+coil.Nb.B_max = 13;                   % T
+coil.Re.B_max = 19;                   % T
+coil.Nb.j_max = 1000e6;               % A/m^2
+coil.Re.j_max = 2000e6;               % A/m^2
+coil.Nb.e_crit =  0.8/100;            % - (not % !)
+coil.Re.e_crit =  0.55/100;           % - (not % !)
+coil.Nb.E =  120e9;                   % Pa
+coil.Re.E =  170e9;                   % Pa
+
+coil.High.B_max = 20;                 % T For plotting
+coil.Low.B_max = 6;                   % T For plotting
+
+%% Predetermined parameters that aren't optimized
+res.kappa = 1.7;                    % - (Stabilization limit of the n=0 vertical displacement mode)
+res.b = 1.2;                        % m (blanket thickness based on nuclear engineering constraints)
+res.T = 15e3 * phys.e / phys.k;     % K (Temperature at which the fusion power is optimized for a fixed pressure)
+res.epsilon = 0.4;                  % inverse aspect ratio
+
+%% Desired parameter
+syms a;                               % m
+
+res.R_0 = a / res.epsilon;          % m
+%% Required parameter
 syms a;                 % m
-R_0 = 10 / a;           % m
-epsilon = 0.1;          % -
-b = 1.2;                % m
-syms c;                 % m
-syms V_p;               % m3
-syms A_p;               % m2
-syms B_0;               % T
-syms I_p;               % MA
-syms p;                 % Pa
-syms T;                 % eV
-syms n;                 % /m3
-syms tau_e;             % s
-syms beta;              % -
-kappa = 1.7;             % -
-syms P_fusion;          % MW
-P_fusion = P_e / eta_e;
 
-%% Physical values
-mu_0 = 1.256637e-6;     % H/m
+%% Unknowns
+R_0 = 10 / a;           % m
 
 %% Find c
-c = CoilForceBalance(R_0, B_max, mu_0, a, b, sigma_max);
+c = CoilForceBalance(a, R_0, phys, fixed, res);
 
-%% Cost function
-cost_function = 2 * pi^2 * R_0 * ((a + b + c)^2 - a^2) / P_e;
-
-%% plot cost versus a
+%% Plot and find a using Cost function
 figure;
-fplot(subs(cost_function, B_max, 6), settings_a_bounds);
 hold on
-fplot(subs(cost_function, B_max, 13), settings_a_bounds);
-fplot(subs(cost_function, B_max, 20), settings_a_bounds);
-ylim([0, 4]);
+CostFunction(a, res.b, c, R_0, fixed, coil.Low, settings);
+if ~settings.use_rebco
+    res.a = CostFunction(a, res.b, c, R_0, fixed, coil.Nb, settings);
+else
+    res.a = CostFunction(a, res.b, c, R_0, fixed, coil.Re, settings);
+end
+CostFunction(a, res.b, c, R_0, fixed, coil.High, settings);
+hold off
 
 %% Evaluate design
-cost_function = subs(cost_function, B_max, B_max_val);
-c = subs(c, B_max, B_max_val);
-a_val = 2;
-c = double(subs(c, a, a_val));
-R_0 = double(subs(R_0, a, a_val));
-B_max = B_max_val;
-if ~settings_constraint_plot
-    a = a_val;
+if settings.use_rebco
+    res = EvaluateDesign(res, coil.Re, c, R_0, settings);
+else
+    res = EvaluateDesign(res, coil.Nb, c, R_0, settings);
 end
-B_0 = ((a + b + c/2) / 2) * B_max / R_0;
 
 %% Plasma requirements
-p = 7e5;
-T = 15e3;
-n = 1.4e20;
-beta = 0.08;
-tau_e = 1.2;
+res.p = 7e5;
+res.n = 1.4e20;
+res.beta = 0.08;
+res.tau_e = 1.2;
 
-%% Confinement
-if ~settings_constraint_plot
-    I_p = double(solve(1.2 == 0.082 * I_p * P_fusion^(-0.5) * R_0^(1.6) * kappa^(-0.2) * B_0^(0.15) * A^(0.5), I_p)); % MA
-else
-    I_p = solve(1.2 == 0.082 * I_p * P_fusion^(-0.5) * R_0^(1.6) * kappa^(-0.2) * B_0^(0.15) * A^(0.5), I_p); % MA
-end
+%% Current
+res.I_p = CalculateCurrent(fixed, res); % MA
 
 %% Constraints
-q = (5 * a^2 * kappa * B_0) / (R_0 * I_p);
-f_b = 1.3 * kappa^(1/4) * beta * (5 * a^2 * kappa * B_0) / (R_0 * I_p) / epsilon^(1/2);
-
-limit_kappa = 2;
-limit_q = 2;
-limit_troyon = 0.028 * I_p / a / B_0;
-limit_greenwald = I_p / (pi * a^2);
-limit_bootstrap = 0.8;
-%% Plot constraints or calculate constraints
-if settings_constraint_plot
-    figure;
-    hold on
-    fplot(f_b / limit_bootstrap, settings_a_bounds);
-    fplot(n / limit_greenwald, settings_a_bounds);
-    fplot(beta / limit_troyon, settings_a_bounds);
-    fplot(q / limit_q, settings_a_bounds);
-    ylim([0, 2])
-else
-    LogicalStr = {'false', 'true'};
-    
-    constraint_kappa = kappa < limit_kappa;
-    constraint_safety = q > limit_q;
-    constraint_troyon = beta < limit_troyon;
-    constraint_greenwald = n < limit_greenwald;
-    constraint_bootstrap = f_b > limit_bootstrap;
-    
-    n_constraints_passed = constraint_kappa + constraint_safety + constraint_troyon + constraint_greenwald + constraint_bootstrap;
-    fprintf('Kappa constraint is fulfilled: %s\n', LogicalStr{constraint_kappa + 1})
-    fprintf('Safety factor constraint is fulfilled: %s\n', LogicalStr{constraint_safety + 1})
-    fprintf('Troyon limit constraint is fulfilled: %s\n', LogicalStr{constraint_troyon + 1})
-    fprintf('Greenwald limit constraint is fulfilled: %s\n', LogicalStr{constraint_greenwald + 1})
-    fprintf('Bootstrap current constraint is fulfilled: %s\n', LogicalStr{constraint_bootstrap + 1})
-    fprintf('Result: %u passed, %u failed\n', n_constraints_passed, 5 - n_constraints_passed)
-end
+ConstraintsCheck(res, settings)
+%% Print found parameters
+PrintResults(res)
