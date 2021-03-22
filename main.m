@@ -1,11 +1,12 @@
-close all
+close all; clear all
 
 %%%% IMPORTANT: convert every parameter and formula to SI units before
 %%%% using it in this program %%%%%%
 
 %% Settings
 settings.values = linspace(1,3,100);  % Range of a values to plot and the resolution
-settings.use_rebco = 1;               % Use REBCO magnets or not
+settings.use_rebco = 0;               % Use REBCO magnets or not
+settings.roger = 0;
 
 %% Physical constants
 phys.mu_0 = 1.256e-6;                 % H/m
@@ -49,20 +50,20 @@ res.P_fusion = fixed.P_e / fixed.eta_e; % Fusion power
 %% Parameter to vary
 syms a;                 % m
 settings.var = a;
-res.a = a;
+sym.a = a;
 
 %% Volume and cost of the device from the wall loading and power output contraints (engineering)
 if ~settings.use_rebco
-    res = CalculateDimensions(res, fixed, phys, coil.Nb);
+    [sym, res] = CalculateDimensions(sym, res, fixed, phys, coil.Nb, settings);
 else
-    res = CalculateDimensions(res, fixed, phys, coil.Re);
+    [sym, res] = CalculateDimensions(sym, res, fixed, phys, coil.Re, settings);
 end
 
 %% Resulting plasma parameters based on scaling laws, steady state ignition and the required power output
-res = CalculatePlasma(res, fixed, phys);
+[sym, res] = CalculatePlasma(sym, res, fixed, phys);
 
 %% Checking if the required plasma parameters are feasible through the normalized limits (plasma physics)
-ConstraintsCheck(res, phys, settings);
+ConstraintsCheck(sym, res, phys, settings);
 
 %% Print Results
 PrintResults(res);
