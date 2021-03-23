@@ -9,9 +9,10 @@ plot(settings.values,subs(limit.greenwald,settings.var,settings.values),'--r','D
 plot(settings.values,subs(limit.troyon,settings.var,settings.values),'-.r','DisplayName','{\beta}/{\beta_T}');
 plot(settings.values,subs(limit.q,settings.var,settings.values),':r','DisplayName','2/q_{*}');  
 
-ylim([0, 2])
+ylim([0, 4])
 legend
 hold off
+box on
 ylabel(sprintf("Parameter relative to constraint.\n >1 is good"));
 switch settings.variable
     case 1
