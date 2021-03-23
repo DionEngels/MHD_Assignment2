@@ -19,6 +19,7 @@ ylim([0, 3.5])
 legend
 hold off
 ylabel(sprintf("Parameter relative to constraint.\n < 1 is fulfilled"));
+box on
 switch settings.variable
     case 1
         xlabel(sprintf("%s [m]", char(settings.var)))
@@ -36,6 +37,7 @@ if settings.plotvolumeperwatt
     plot(settings.values,double(subs(res.volumeperwatt/(10^-6),settings.var,settings.values)),'-b');
     title(strcat("Volume per Watt for " ,magnet, " material"))
     ylabel(sprintf("Volume per Watt [m^3/MW]"));
+    box on
     switch settings.variable
         case 1
             xlabel(sprintf("%s [m]", char(settings.var)))
