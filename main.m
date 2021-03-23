@@ -1,11 +1,11 @@
-close all;
+close all; addpath('Functions');
 
 %%%% IMPORTANT: convert every parameter and formula to SI units before
 %%%% using it in this program %%%%%%
 
 %% Settings
 settings.use_rebco = 0;               % Use REBCO magnets or not
-settings.roger = 1;
+settings.roger = 0;
 settings.variable = 1;                % 1 = a, 2 = P_e
 
 %% Physical constants
